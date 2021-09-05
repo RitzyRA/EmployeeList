@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Linq;
 
 namespace EmployeesList
@@ -9,11 +10,8 @@ namespace EmployeesList
         {
             Employee[] empArr = GenerateList();
             Console.WriteLine("Would you like to filter data before printing? Y/N?");
-            if (Console.ReadLine().ToLower() == "y")
-            {
-                FilterMenu(empArr);
-            }
-            else PrintList(empArr);
+            string inputAnswerFilter = Console.ReadLine().ToLower();
+            FilterOrNot(inputAnswerFilter, empArr);
         }
 
         static Employee[] GenerateList()
@@ -69,7 +67,18 @@ namespace EmployeesList
                 Console.WriteLine("Enter a valid date (format: yyyy MM dd or yyyy-MM-dd)!");
                 inputDob = Console.ReadLine();
             }
-            return DateTime.Parse(inputDob);
+            DateTime min = DateTime.Now.AddYears(-120);
+            DateTime max = DateTime.Now.AddYears(-14);
+            DateTime dob = DateTime.Parse(inputDob);
+            int tooEarly = DateTime.Compare(min, dob);
+            int tooLate = DateTime.Compare(dob, max);
+            if (tooEarly > 0 || tooLate > 0)
+            {
+                Console.WriteLine("Enter a valid date (age should be between 14-120)!");
+                inputDob = Console.ReadLine();
+                ReturnValidDob(inputDob);
+            }
+            return dob;
         }
         static int ReturnValidSalary(string inputSalary)
         {
@@ -142,7 +151,46 @@ namespace EmployeesList
             Console.WriteLine("└" + new string('-', colWidth1) + "┴" + new string('-', colWidth2) + "┴" + new string('-', colWidth3) + "┴" + new string('-', colWidth4) + "┴" + new string('-', colWidth5) + "┘");
         }
 
-        static void FilterMenu(Employee[] empArr)
+        static void FilterOrNot(string input, Employee[] empArr)
+        {
+            if (input == "y")
+            {
+                empArr = FilterMenu(empArr);
+                Console.WriteLine("Would you like to sort data? Y/N?");
+                string inputAnswerSort = Console.ReadLine().ToLower();
+                SortOrNot(inputAnswerSort, empArr);
+            }
+            else if (input == "n")
+            {
+                Console.WriteLine("Would you like to sort data? Y/N?");
+                string inputAnswerSort = Console.ReadLine().ToLower();
+                SortOrNot(inputAnswerSort, empArr);
+            }
+            else
+            {
+                Console.WriteLine("Please enter Y or N:");
+                FilterOrNot(Console.ReadLine().ToLower(), empArr);
+            }
+        }
+        static void SortOrNot(string input, Employee[] empArr)
+        {
+            if (input == "y")
+            {
+                empArr = SortMenu(empArr);
+                PrintList(empArr);
+            }
+            else if (input == "n")
+            {
+                PrintList(empArr);
+            }
+            else
+            {
+                Console.WriteLine("Please enter Y or N:");
+                SortOrNot(Console.ReadLine().ToLower(), empArr);
+            }
+        }
+
+        static Employee[] FilterMenu(Employee[] empArr)
         {
             Console.WriteLine("Filter by:");
             Console.WriteLine("a) Name");
@@ -153,36 +201,50 @@ namespace EmployeesList
 
             if (inputChoice == "a")
             {
-                FilterByName(empArr);
+                Console.WriteLine("Enter a name to filter");
+                string inputFilterName = Console.ReadLine();
+                string name = ReturnValidString(inputFilterName, "name");
+                empArr = FilterByName(name, empArr);
             }
             else if (inputChoice == "b")
             {
-                FilterBySurname(empArr);
+                Console.WriteLine("Enter a surname to filter");
+                string inputFilterSurame = Console.ReadLine();
+                string surname = ReturnValidString(inputFilterSurame, "surname");
+                empArr = FilterBySurname(surname, empArr);
             }
             else if (inputChoice == "c")
             {
-                FilterByDob(empArr);
+                Console.WriteLine("Enter a date of birth to filter");
+                string inputFilter = Console.ReadLine();
+                DateTime dob = ReturnValidDob(inputFilter);
+                empArr = FilterByDob(dob, empArr);
             }
             else if (inputChoice == "d")
             {
-                FilterBySalary(empArr);
+                Console.WriteLine("Enter a salary to filter");
+                string inputFilter = Console.ReadLine();
+                int salary = ReturnValidSalary(inputFilter);
+                empArr = FilterBySalary(salary, empArr);
             }
-            else Console.WriteLine("Enter a valid letter!");
-
-            Console.WriteLine("Would you like to use another filter (Y) or print unfiltered (N)? Y/N?");
-            if (Console.ReadLine().ToLower() == "y")
+            else
             {
+                Console.WriteLine("Enter a valid letter!");
                 FilterMenu(empArr);
             }
-            else PrintList(empArr);
 
+            PrintList(empArr);
+
+            Console.WriteLine("Would you like to use another filter? Y/N?");
+            if (Console.ReadLine().ToLower() == "y")
+            {
+                empArr = FilterMenu(empArr);
+                return empArr;
+            }
+            else return empArr;
         }
-
-        static void FilterByName(Employee[] empArr)
+        static Employee[] FilterByName(string name, Employee[] empArr)
         {
-            Console.WriteLine("Enter a name to filter");
-            string inputFilterName = Console.ReadLine();
-            string name = ReturnValidString(inputFilterName, "name");
             int counter = 0;
             for (int i = 0; i < empArr.Length; i++)
             {
@@ -191,23 +253,31 @@ namespace EmployeesList
                     counter++;
                 }
             }
-            Employee[] filteredArr = new Employee[counter];
-            int lastIndex = 0;
-            for (int i = 0; i < empArr.Length; i++)
+            if(counter > 0)
             {
-                if (empArr[i].Name == name)
+                Employee[] filteredArr = new Employee[counter];
+                int lastIndex = 0;
+                for (int i = 0; i < empArr.Length; i++)
                 {
-                    filteredArr[lastIndex] = empArr[i];
-                    lastIndex++;
+                    if (empArr[i].Name == name)
+                    {
+                        filteredArr[lastIndex] = empArr[i];
+                        lastIndex++;
+                    }
                 }
+                return filteredArr;
             }
-            PrintList(filteredArr);
+            else
+            {
+                Console.WriteLine("This name does not exist! Enter an existing name:");
+                string inputFilterName = Console.ReadLine();
+                name = ReturnValidString(inputFilterName, "name");
+                FilterByName(name, empArr);
+                return empArr;
+            }
         }
-        static void FilterBySurname(Employee[] empArr)
+        static Employee[] FilterBySurname(string surname, Employee[] empArr)
         {
-            Console.WriteLine("Enter a surname to filter");
-            string inputFilter = Console.ReadLine();
-            string surname = ReturnValidString(inputFilter, "surname");
             int counter = 0;
             for (int i = 0; i < empArr.Length; i++)
             {
@@ -216,23 +286,31 @@ namespace EmployeesList
                     counter++;
                 }
             }
-            Employee[] filteredArr = new Employee[counter];
-            int lastIndex = 0;
-            for (int i = 0; i < empArr.Length; i++)
+            if (counter > 0)
             {
-                if (empArr[i].Surname == surname)
+                Employee[] filteredArr = new Employee[counter];
+                int lastIndex = 0;
+                for (int i = 0; i < empArr.Length; i++)
                 {
-                    filteredArr[lastIndex] = empArr[i];
-                    lastIndex++;
+                    if (empArr[i].Surname == surname)
+                    {
+                        filteredArr[lastIndex] = empArr[i];
+                        lastIndex++;
+                    }
                 }
+                return filteredArr;
             }
-            PrintList(filteredArr);
+            else
+            {
+                Console.WriteLine("This surname does not exist! Enter an existing surname:");
+                string inputFilterName = Console.ReadLine();
+                surname = ReturnValidString(inputFilterName, "name");
+                FilterBySurname(surname, empArr);
+                return empArr;
+            }
         }
-        static void FilterByDob(Employee[] empArr)
+        static Employee[] FilterByDob(DateTime dob, Employee[] empArr)
         {
-            Console.WriteLine("Enter a date of birth to filter");
-            string inputFilter = Console.ReadLine();
-            DateTime dob = ReturnValidDob(inputFilter);
             int counter = 0;
             for (int i = 0; i < empArr.Length; i++)
             {
@@ -241,23 +319,31 @@ namespace EmployeesList
                     counter++;
                 }
             }
-            Employee[] filteredArr = new Employee[counter];
-            int lastIndex = 0;
-            for (int i = 0; i < empArr.Length; i++)
+            if (counter > 0)
             {
-                if (empArr[i].Dob == dob)
+                Employee[] filteredArr = new Employee[counter];
+                int lastIndex = 0;
+                for (int i = 0; i < empArr.Length; i++)
                 {
-                    filteredArr[lastIndex] = empArr[i];
-                    lastIndex++;
+                    if (empArr[i].Dob == dob)
+                    {
+                        filteredArr[lastIndex] = empArr[i];
+                        lastIndex++;
+                    }
                 }
+                return filteredArr;
             }
-            PrintList(filteredArr);
+            else
+            {
+                Console.WriteLine("This date of birth does not exist! Enter an existing date of birth:");
+                string inputFilterName = Console.ReadLine();
+                dob = ReturnValidDob(inputFilterName);
+                FilterByDob(dob, empArr);
+                return empArr;
+            }
         }
-        static void FilterBySalary(Employee[] empArr)
+        static Employee[] FilterBySalary(int salary, Employee[] empArr)
         {
-            Console.WriteLine("Enter a salary to filter");
-            string inputFilter = Console.ReadLine();
-            int salary = ReturnValidSalary(inputFilter);
             int counter = 0;
             for (int i = 0; i < empArr.Length; i++)
             {
@@ -266,45 +352,66 @@ namespace EmployeesList
                     counter++;
                 }
             }
-            Employee[] filteredArr = new Employee[counter];
-            int lastIndex = 0;
-            for (int i = 0; i < empArr.Length; i++)
+            if (counter > 0)
             {
-                if (empArr[i].Salary == salary)
+                Employee[] filteredArr = new Employee[counter];
+                int lastIndex = 0;
+                for (int i = 0; i < empArr.Length; i++)
                 {
-                    filteredArr[lastIndex] = empArr[i];
-                    lastIndex++;
+                    if (empArr[i].Salary == salary)
+                    {
+                        filteredArr[lastIndex] = empArr[i];
+                        lastIndex++;
+                    }
                 }
+                return filteredArr;
             }
-            PrintList(filteredArr);
+            else
+            {
+                Console.WriteLine("This salary does not exist! Enter an existing salary:");
+                string inputFilterName = Console.ReadLine();
+                salary = ReturnValidSalary(inputFilterName);
+                FilterBySalary(salary, empArr);
+                return empArr;
+            }
         }
-        //static void SortByName(Employee[] empArr)
-        //{
-        //    Console.WriteLine("Enter a name to sort by");
-        //    string inputFilterName = Console.ReadLine();
-        //    string name = ReturnValidString(inputFilterName, "name");
 
-        //    int counter = 0;
-        //    for (int i = 0; i < empArr.Length; i++)
-        //    {
-        //        if (empArr[i].Name == name)
-        //        {
-        //            counter++;
-        //        }
-        //    }
-        //    Employee[] filteredArr = new Employee[counter];
-        //    int lastIndex = 0;
-        //    for (int i = 0; i < empArr.Length; i++)
-        //    {
-        //        if (empArr[i].Name == name)
-        //        {
-        //            filteredArr[lastIndex] = empArr[i];
-        //            lastIndex++;
-        //        }
-        //    }
-        //    PrintList(filteredArr);
-        //}
+        static Employee[] SortMenu(Employee[] empArr)
+        {
+            Console.WriteLine("Sort by:");
+            Console.WriteLine("a) Name");
+            Console.WriteLine("b) Surname");
+            Console.WriteLine("c) Date of birth");
+            Console.WriteLine("d) Salary");
+            string inputChoice = Console.ReadLine().ToLower();
 
+            if (inputChoice == "a")
+            {
+                Array.Sort(empArr, new PersonComparerByName());
+                return empArr;
+            }
+            else if (inputChoice == "b")
+            {
+                Array.Sort(empArr, new PersonComparerBySurname());
+                return empArr;
+            }
+            else if (inputChoice == "c")
+            {
+                Array.Sort(empArr, new PersonComparerByDob());
+                return empArr;
+            }
+            else if (inputChoice == "d")
+            {
+                Array.Sort(empArr, new PersonComparerBySalary());
+                return empArr;
+            }
+            else
+            {
+                Console.WriteLine("Enter a valid letter!");
+                SortMenu(empArr);
+                return empArr;
+            }
+        }
     }
     class Employee
     {
@@ -320,6 +427,34 @@ namespace EmployeesList
             Surname = surname;
             Dob = dob;
             Salary = salary;
+        }
+    }
+    class PersonComparerByName : IComparer
+    {
+        public int Compare(object x, object y)
+        {
+            return (new CaseInsensitiveComparer()).Compare(((Employee)x).Name, ((Employee)y).Name);
+        }
+    }
+    class PersonComparerBySurname : IComparer
+    {
+        public int Compare(object x, object y)
+        {
+            return (new CaseInsensitiveComparer()).Compare(((Employee)x).Surname, ((Employee)y).Surname);
+        }
+    }
+    class PersonComparerByDob : IComparer
+    {
+        public int Compare(object x, object y)
+        {
+            return (new CaseInsensitiveComparer()).Compare(((Employee)x).Dob, ((Employee)y).Dob);
+        }
+    }
+    class PersonComparerBySalary : IComparer
+    {
+        public int Compare(object x, object y)
+        {
+            return (new CaseInsensitiveComparer()).Compare(((Employee)x).Salary, ((Employee)y).Salary);
         }
     }
 }
